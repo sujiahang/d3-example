@@ -1,0 +1,311 @@
+/****************************************************************************************************************************
+ * Author:          Su jiahang
+ * Function:        set begin and end dates plugin
+ * Create Date:     2018-06-21
+ * Modify List:
+****************************************************************************************************************************/
+
+import React,{Component} from 'react';
+import PropTypes from 'prop-types';
+class DateRangePicker extends Component{
+
+    constructor(props, context) {
+        super(props, context);
+        this.handleBind = this.handleBind.bind(this);
+        this.LoadedDefaultDate=this.LoadedDefaultDate.bind(this);
+    }
+
+    // shouldComponentUpdate(nextProps,nextState){
+    //     if(nextState == this.state){
+    //         return false;
+    //     }
+    // }
+
+    componentDidUpdate() {
+        this.LoadedDefaultDate();
+        this.handleBind();
+    }
+
+    componentDidMount(){
+        this.LoadedDefaultDate();
+        this.handleBind();
+    }
+
+    LoadedDefaultDate(){
+        const { id, startDateTime, endDateTime, dateformat, handlerChange} = this.props;
+
+        if(startDateTime && endDateTime){
+            // let val =  startDateTime.format(dateformat) +" — " + endDateTime.format(dateformat);
+            let _startDateTime = startDateTime;
+            let _endDateTime = endDateTime;
+            let _format = "MM/DD/YYYY h:mm A";
+
+            if(moment(_startDateTime).isSame(moment("1997-1-1", ["YYYY-MM-DD"])))
+            {
+                $("#" + id).val("All"); 
+                return;
+            }
+            if((startDateTime.toLowerCase().indexOf('am') == -1 && startDateTime.toLowerCase().indexOf('pm') == -1)){
+                _startDateTime = moment(startDateTime).format(_format);
+            }
+            
+            if((endDateTime.toLowerCase().indexOf('am') == -1 && endDateTime.toLowerCase().indexOf('pm') == -1)){
+                _endDateTime = moment(endDateTime).format(_format);
+            }
+            let val =  _startDateTime + " — " + _endDateTime;
+
+            $("#" + id).val(val);
+        }
+    }
+
+    handleBind() {
+        const { id, startDateTime, endDateTime,dateformat,startofDayTime,direction,isDefaultTime,isLimitTime} = this.props;
+        let today_from ='';
+        let today_to = '';
+
+        let yesterday_from = '';
+        let yesterday_to = '';
+
+        let last7days_from = '';
+        let last7days_to = '';
+
+        let last30days_from = '';
+        let last30days_to = '';
+
+        let thismonth_from = '';
+        let thismonth_to = '';
+        
+        let lastmonth_from = '';
+        let lastmonth_to = '';
+
+        let lastweek_from='';
+        let lastweek_to='';
+
+        let thisweek_from='';
+        let thisweek_to='';
+
+        let earliest_from= moment("1997-1-1", ["YYYY-MM-DD"]);
+        let latest_to=moment("2999-1-1", ["YYYY-MM-DD"]);
+
+        if(startofDayTime){
+            today_from = moment().format('MM/DD/YYYY '+ startofDayTime);
+            today_to = moment(today_from).add(1,"days").subtract(1,"ms");
+
+            yesterday_from = moment().subtract('days', 1).format('MM/DD/YYYY '+ startofDayTime);
+            yesterday_to = moment(yesterday_from).add(1,"days").subtract(1,"ms");
+
+            last7days_from = moment().subtract('days', 6).format('MM/DD/YYYY '+ startofDayTime);
+            last7days_to =  moment(last7days_from).add(7,"days").subtract(1,"ms");
+
+            last30days_from = moment().subtract('days', 29).format('MM/DD/YYYY '+ startofDayTime);
+            last30days_to =  moment(last30days_from).add(30,"days").subtract(1,"ms");
+
+            thismonth_from = moment().startOf('month').format('MM/DD/YYYY '+ startofDayTime);
+            thismonth_to = moment(thismonth_from).add(1,"months").subtract(1,"ms");
+
+            lastmonth_from = moment().subtract('months', 1).startOf('month').format('MM/DD/YYYY '+ startofDayTime);
+            lastmonth_to = moment(lastmonth_from).add(1,"months").subtract(1,"ms");
+
+            thisweek_from=moment().day(0).format('MM/DD/YYYY '+ startofDayTime);
+            thisweek_to=moment(thisweek_from).add(7,"days").subtract(1,"ms");
+
+            lastweek_from=moment().day(-7).format('MM/DD/YYYY '+ startofDayTime);
+            lastweek_to=moment(lastweek_from).add(7,"days").subtract(1,"ms");
+
+        }else{
+            today_from = moment().startOf('day');
+            today_to = moment();
+
+            yesterday_from = moment().subtract('days', 1).startOf('day');
+            yesterday_to = moment().subtract('days', 1).endOf('day');
+
+            last7days_from = moment().subtract('days', 6);
+            last7days_to = moment();
+
+            last30days_from = moment().subtract('days', 29);
+            last30days_to =  moment();
+
+            thismonth_from = moment().startOf('month');
+            thismonth_to = moment().endOf('month');
+
+            lastmonth_from = moment().subtract('months', 1).startOf('month');
+            lastmonth_to = moment().subtract('months', 1).endOf('month');
+
+            thisweek_from=moment().day(0);
+            thisweek_to=moment(thisweek_from).add(7,"days").subtract(1,"ms");
+
+            lastweek_from=moment().day(-7);
+            lastweek_to=moment(lastweek_from).add(7,"days").subtract(1,"ms");
+        }
+
+        let _startDateTime = (moment(startDateTime).isValid())? moment(startDateTime,"MM/DD/YYYY "+ startofDayTime).format("MM/DD/YYYY "+ startofDayTime): moment();
+        let _endDateTime = (moment(endDateTime).isValid())?  moment(endDateTime,"MM/DD/YYYY "+ startofDayTime).format("MM/DD/YYYY "+ startofDayTime): moment();
+
+        // _startDateTime = isDefaultTime? today_from: _startDateTime;
+        if(_startDateTime==today_from &&  moment(moment(today_to).format("MM/DD/YYYY "+startofDayTime)).isSame(_endDateTime)){
+            _endDateTime=today_to;
+        }
+        else if(_startDateTime==yesterday_from && moment(moment(yesterday_to).format("MM/DD/YYYY "+startofDayTime)).isSame(_endDateTime)){
+            _endDateTime=yesterday_to;
+        }
+        else if(_startDateTime==last7days_from && moment(moment(last7days_to).format("MM/DD/YYYY "+startofDayTime)).isSame(_endDateTime)){
+            _endDateTime=last7days_to;
+        }
+        else if(_startDateTime==last30days_from && moment(moment(last30days_to).format("MM/DD/YYYY "+startofDayTime)).isSame(_endDateTime)){
+            _endDateTime=last30days_to;
+        }
+        else if(_startDateTime==thismonth_from && moment(moment(thismonth_to).format("MM/DD/YYYY "+startofDayTime)).isSame(_endDateTime)){
+            _endDateTime=thismonth_to;
+        }
+        else if(_startDateTime==lastmonth_from && moment(moment(lastmonth_to).format("MM/DD/YYYY "+startofDayTime)).isSame(_endDateTime)){
+            _endDateTime=lastmonth_to;
+        }
+        else if(_startDateTime==thisweek_from && moment(moment(thisweek_to).format("MM/DD/YYYY "+startofDayTime)).isSame(_endDateTime)){
+            _endDateTime=thisweek_to;
+        }
+        else if(_startDateTime==lastweek_from && moment(moment(lastweek_to).format("MM/DD/YYYY "+startofDayTime)).isSame(_endDateTime)){
+            _endDateTime=lastweek_to;
+        }
+
+        // _endDateTime = isDefaultTime? today_to: _endDateTime;
+
+        // console.log(id + " _startDateTime: " + _startDateTime);
+        // console.log(id + " _endDateTime: " + _endDateTime);
+
+        let handlerChange = this.props.handlerChange;
+        let rangeObj=!isLimitTime? {
+            "All":[
+                earliest_from,
+                latest_to
+            ],
+            "Today": [
+                today_from,
+                today_to
+            ],
+            "Yesterday": [
+                yesterday_from,
+                yesterday_to
+            ],
+            "Last 7 Days":[
+                last7days_from,
+                last7days_to
+            ],
+            "Last 30 Days": [
+                last30days_from,
+                last30days_to
+            ],
+            "This Month": [
+                thismonth_from,
+                thismonth_to
+            ],
+            "Last Month": [
+                lastmonth_from,
+                lastmonth_to
+            ]
+        }:{
+            "Today": [
+                today_from,
+                today_to
+            ],
+            "Yesterday": [
+                yesterday_from,
+                yesterday_to
+            ],
+            "This Week": [
+                thisweek_from,
+                thisweek_to
+            ],
+            "Last Week": [
+                lastweek_from,
+                lastweek_to
+            ],
+            "Last 7 Days":[
+                last7days_from,
+                last7days_to
+            ],
+            "Last 30 Days": [
+                last30days_from,
+                last30days_to
+            ],
+        }
+
+        $('#'+id).daterangepicker({
+            "timePicker": true,
+            "ranges": rangeObj,
+            "showCustomRangeLabel": !isLimitTime,
+            "locale": {
+                "format": dateformat,
+                "separator": " — ",
+                "applyLabel": "Apply",
+                "cancelLabel": "Cancel",
+                "fromLabel": "From",
+                "toLabel": "To",
+                "customRangeLabel": "Custom",
+                "weekLabel": "W",
+                "daysOfWeek": [
+                    "Su",
+                    "Mo",
+                    "Tu",
+                    "We",
+                    "Th",
+                    "Fr",
+                    "Sa"
+                ],
+                "monthNames": [
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December"
+                ],
+                "firstDay": 0
+            },
+            "autoUpdateInput": false,// Fix mulptiple dataranger picker are used error issue.
+            "startDate":  _startDateTime,
+            "endDate":  _endDateTime,
+            "opens": direction
+        }, function(start, end, label) {
+            if(typeof handlerChange ==="function"){
+                handlerChange(start.format(dateformat), end.format(dateformat));
+            }
+        });
+    }
+
+    render(){
+        const {id, startDateTime, endDateTime,dateformat} = this.props;
+        //let defaultValue =  startDateTime.format(dateformat) +" — " + endDateTime.format(dateformat);
+        // let defaultValue =  startDateTime +" — " + endDateTime;
+        return(
+            <div className="input-prepend input-group" style={{width:300, margin:'0 auto'}}>
+                <span className="add-on input-group-addon" style={{backgroundColor: '#363636', borderTopLeftRadius: 15, borderBottomLeftRadius: 15, border: '1px solid #363636', color: 'white'}}>
+                    <i className="glyphicon glyphicon-calendar fa fa-calendar" />
+                </span>
+                <input type="text" style={{backgroundColor: '#363636', borderTopRightRadius: 15, borderBottomRightRadius: 15, color: 'white', border: '1px solid #363636', fontSize:10, height:30, width:270}} id = {id}/>
+            </div>
+		    );
+          }
+}
+
+DateRangePicker.PropTypes = {
+    id: PropTypes.string,
+    dateformat: PropTypes.string,
+    direction: PropTypes.string,
+    isDefaultTime:PropTypes.bool,
+    isLimitTime:PropTypes.bool
+}
+
+DateRangePicker.defaultProps = {
+    dateformat:"MM/DD/YYYY LT",
+    direction: "center",
+    isDefaultTime:true,
+    isLimitTime:false
+}
+
+module.exports = DateRangePicker;

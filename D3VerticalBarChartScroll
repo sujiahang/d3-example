@@ -1,0 +1,377 @@
+/****************************************************************************************************************************
+ * Author:          Su jiahang
+ * Function:        D3VerticalBarChartScroll Component
+ * Create Date:     2018-6-15
+ * Modify List:     
+    
+****************************************************************************************************************************/
+
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import ReactDOM from 'react-dom';
+import * as d3 from 'd3';
+
+class D3VerticalBarChartScroll extends Component{
+    constructor(props){
+        super(props);
+        this.refreshChart=this.refreshChart.bind(this);
+        this.handleClick=this.handleClick.bind(this);
+        this.barHandleClick=this.barHandleClick.bind(this);
+        this.defaultbrushmove = [0,390];
+    }
+    componentDidMount(){
+
+        this.refreshChart();
+    }
+
+    componentDidUpdate(){
+        const {id} = this.props;
+ 
+        let svg = d3.select('#'+id);
+        svg.selectAll("svg").remove();
+
+        this.refreshChart();
+    }
+    handleClick(d){
+        if(typeof this.props.handleClick === "function"){
+            
+            this.props.handleClick(d);
+        }
+    }
+    barHandleClick(d){
+        if(typeof this.props.barHandleClick === "function"){
+            
+            this.props.barHandleClick(d);
+        }
+    }
+    refreshChart() {
+        const {id, data, title,color,legend} = this.props;
+
+        // var data = [{"date":"2012/1/1",  value1:130,value2:10},
+        // {"date":"2012/1/2",value1:10,value2:12},{"date":"2012/1/10",  value1:200,value2:100},{"date":"2012/1/18",  value1:150,value2:100}
+        // ,{"date":"2012/1/3",  value1:100,value2:160},{"date":"2012/1/11",  value1:100,value2:100},{"date":"2012/1/19",  value1:100,value2:100},
+        // {"date":"2012/1/4",  value1:120,value2:100},{"date":"2012/1/12",  value1:50,value2:190},{"date":"2012/1/20",  value1:100,value2:100},
+        // {"date":"2012/1/5",  value1:103,value2:100},{"date":"2012/1/13",  value1:10,value2:100},{"date":"2012/1/21",  value1:70,value2:16},
+        // {"date":"2012/1/6",  value1:190,value2:50},{"date":"2012/1/14",  value1:130,value2:100},{"date":"2012/1/22",  value1:100,value2:100}
+        // ,{"date":"2012/1/7",  value1:170,value2:100},{"date":"2012/1/15",  value1:100,value2:100},{"date":"2012/1/23",  value1:100,value2:100},
+        // {"date":"2012/1/8",  value1:100,value2:30},{"date":"2012/1/16",  value1:120,value2:100},{"date":"2012/1/24",  value1:20,value2:100},
+        // {"date":"2012/1/9",  value1:111,value2:100},{"date":"2012/1/17",  value1:155,value2:56},{"date":"2012/1/25", value1:100,value2:100}
+        // ,{"date":"2012/1/26",  value1:100,value2:30},{"date":"2012/1/27",  value1:120,value2:100},{"date":"2012/1/28",  value1:20,value2:100},
+        // {"date":"2012/1/29",  value1:111,value2:100},{"date":"2012/1/30",  value1:155,value2:56},{"date":"2012/1/31", value1:100,value2:100}];
+        let _this = this;
+        var parseTime = d3.timeParse("%Y/%m/%d");
+        var formatTime = d3.timeFormat("%m/%d");
+        var formatTime1= d3.timeFormat("%Y/%m/%d");
+        
+
+        const margin = {top: 20, right: 20, bottom: 110, left: 50},
+            margin2 = {top: 430, right: 20, bottom: 30, left: 40},
+            width = 960 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom,
+            height2 = 500 - margin2.top - margin2.bottom;
+
+        const offset=40;
+        const offset_bar=10
+        // let tempDate;
+        //add a useless data to The list of moves to the right
+        // if(data.length>0){
+        //     if(data[0].index!=-1){
+        //         let firstDate= parseTime(data[0].date);
+        //         let day= firstDate.getDate();
+        //         tempDate=new Date(firstDate.setDate(day-1));
+        //         data.unshift({index:-1,date:formatTime1(tempDate),value1:0,value2:0});
+        //     }
+        // }
+        
+        const x = d3.scaleTime()
+                .domain(d3.extent(data, d => parseTime(d.date)))
+                .range([0, width-margin.right]);
+        const x2 = d3.scaleTime().domain(x.domain()).range([0, width - margin.right]);
+        const y = d3.scaleLinear().domain([0, d3.max(data, d => d.value1)]).range([height, 0]);
+        const y2 = d3.scaleLinear().domain(y.domain()).range([height2, 0]);
+        const y3= d3.scaleLinear().domain([0, d3.max(data, d => d.value2)]).range([height, 0]);
+        const y4= d3.scaleLinear().domain(y3.domain()).range([height2, 0]);
+
+        var colorScale = d3.scaleOrdinal().domain(legend).range(color);
+
+        const xAxis = d3.axisBottom(x)
+                .tickFormat(function(d) {
+                    // if(formatTime(d)==formatTime(tempDate)){
+                    //     return "0" 
+                    // }else{
+                    //     return formatTime(d) 
+                    // }
+                    return formatTime(d) 
+                });
+        const xAxis2 = d3.axisBottom(x2)
+                .tickFormat(function(d) { 
+                    // if(formatTime(d)==formatTime(tempDate)){
+                    //     return "0" 
+                    // }else{
+                    //     return formatTime(d) 
+                    // }
+                    return formatTime(d)  
+                });
+        const yAxis = d3.axisLeft(y);
+        const yAxis2 = d3.axisRight(y3);
+
+
+
+        const brush = d3.brushX()
+                .extent([[0, 0], [width, height2]])
+                .on('brush', brushed);
+
+        var _width = 1000;
+        const svg = d3.select("#" + id).append('svg')
+            .attr('width', _width)
+            .attr('height', _width/2)
+            .attr("viewBox", "0 0 "+ _width +" "+ (_width/2))
+            .attr("preserveAspectRatio","xMidYMin meet");
+
+        svg.append('defs').append('clipPath')
+            .attr('id', 'clip')
+            .append('rect')
+            .attr('width', width)
+            .attr('height', height);
+
+        const focus = svg.append('g')
+            .attr('class', 'focus')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+
+
+        const context = svg.append('g')
+            .attr('class', 'context')
+            .attr('transform', `translate(${margin2.left+margin2.right},${margin2.top})`);
+        
+        let dots=focus.append('g');
+        dots.attr('clip-path', 'url(#clip)').attr("width",width-margin.right);
+
+        let bar=focus.append('g');
+        bar.attr('clip-path', 'url(#clip)')
+
+        dots.selectAll("dot")
+            .data(data)
+            .enter().append("rect")
+            .attr('class', 'dot')
+            .attr("width", function(d) {
+                return 20;
+            })
+            .attr("x", function(d) {
+                return x(parseTime(d.date));
+            })
+            .attr("y", function(d) {
+                return y(d.value1);
+            })
+            .attr("height", function(d) {
+                return height - y(d.value1);
+                
+            })
+            .style("fill", color[0])
+            .on("click",function(d){
+                _this.handleClick(d.index);
+            })
+            .on("mousemove",function(d){
+                svg.style("cursor","pointer");
+            })
+            .on("mouseout",function(d){
+                svg.style("cursor","default");
+            });
+
+        bar.selectAll("bar")
+            .data(data)
+            .enter().append("rect")
+            .attr('class', 'bar')
+            .attr("width", function(d) {
+                return 20;
+            })
+            .attr("x", function(d) {
+                return x(parseTime(d.date));
+            })
+            .attr("y", function(d) {
+                return y3(d.value2);
+            })
+            .attr("height", function(d) {
+                return height - y3(d.value2);
+                
+            })
+            .style("fill", color[1])
+            .on("click",function(d){
+                _this.barHandleClick(d.index);
+            })
+            .on("mousemove",function(d){
+                svg.style("cursor","pointer");
+            })
+            .on("mouseout",function(d){
+                svg.style("cursor","default");
+            });
+
+            
+        
+        focus.append('g')
+            .attr('class', 'axis axis--x')
+            .attr('transform', `translate(0,${height+5})`)
+            .call(xAxis)
+            .selectAll(".tick")
+            .call(wrap,offset);
+
+        focus.select("path")
+            .attr('transform', `translate(${offset_bar},0)`)
+        
+
+        focus.append('g')
+            .attr('class', 'axis axis--y')
+            .call(yAxis);
+
+        focus.append('text')
+            // .attr('transform', 'rotate(-90)')
+            .attr('y', -25)
+            .attr('x', 10)
+            .attr('dy', '1em')
+            .style('text-anchor', 'middle')
+            .style("font-size","18px")
+            .style("fill", color[0])
+            .text(legend[0]);
+
+        focus.append('g')
+            .attr('class', 'axis axis--y')
+            .attr('transform', `translate(${width},0)`)
+            .call(yAxis2)
+            .append("text")
+            .attr("dy", "1em")
+            .attr('y', -24)
+            .attr('x', 10)
+            .style("text-anchor", "middle")
+            // .attr("transform", "rotate(-90)")
+            .style("font-size","18px")
+            .style("fill", color[1])
+            .text(legend[1]);
+
+        svg.append('text')
+            .attr('transform', `translate(${(width + margin.right + margin.left) / 2},${(height + margin.top + margin.bottom)})`)
+            .style('text-anchor', 'middle')
+            .text('Date');
+        
+        dots = context.append('g');
+        dots.attr('clip-path', 'url(#clip)');
+
+        bar=context.append('g');
+        bar.attr('clip-path', 'url(#clip)');
+
+        dots.selectAll("dot")
+            .data(data)
+            .enter().append("rect")
+            .attr('class', 'dotContext')
+            .attr("width", function(d) {
+                return 10;
+            })
+            .attr("x", function(d) {
+                return x2(parseTime(d.date));
+            })
+            .attr("y", function(d) {
+                return y2(d.value1);
+            })
+            .attr("height", function(d) {
+                return height2 - y2(d.value1);
+                
+            })
+            .style("fill", color[0])
+
+
+        bar.selectAll("bar")
+            .data(data)
+            .enter().append("rect")
+            .attr('class', 'barsdf')
+            .attr("width", function(d) {
+                return 10;
+            })
+            .attr("x", function(d) {
+                return x2(parseTime(d.date))+offset_bar;
+            })
+            .attr("y", function(d) {
+                return y4(d.value2);
+            })
+            .attr("height", function(d) {
+                return height2 - y4(d.value2);
+                
+            })
+            .style("fill", color[1])
+            
+
+        context.append('g')
+            .attr('class', 'axis axis--x')
+            .attr('transform', `translate(0,${height2})`)
+            .call(xAxis2)
+            .selectAll(".tick")
+            .call(wrap,offset_bar);
+        
+        context.select("path")
+            .attr('transform', `translate(${offset_bar},0)`)
+        
+        context.append('g')
+            .attr('class', 'brush')
+            .call(brush)
+            .call(brush.move, this.defaultbrushmove);
+
+        // Draws the series items onto a legend
+        var legendDraw = svg.selectAll(".legend")
+            .data(legend.slice())
+            .enter()
+            .append("g")
+            .attr("class", "legend")
+            .attr("transform", function(d, i) { return "translate(50," + i * 20 + ")"; });
+
+        legendDraw.append("rect")
+            .attr("x", width - 48)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", colorScale);
+
+        legendDraw.append("text")
+            .attr("x", width - 54)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(function(d) { return d; });
+        
+        function brushed() {
+            const selection = d3.event.selection;
+            _this.defaultbrushmove = selection;
+            x.domain(selection.map(x2.invert, x2));
+            focus.selectAll('.dot')
+                .attr('x', d => x(parseTime(d.date))+offset-20)
+                .attr('y', d => y(d.value1));
+            focus.selectAll('.bar')
+                .attr('x', d => x(parseTime(d.date))+offset)
+                .attr('y', d => y3(d.value2));
+            focus.select('.axis--x').call(xAxis).selectAll(".tick").call(wrap,offset);
+        }
+        
+        function wrap(text,width){
+            text.each(function () {
+                var text = d3.select(this);
+                var t= text.attr("transform");
+                var x=parseFloat(t.split(',')[0].split('(')[1]);
+                text.attr("transform",`translate(${x+width},0)`);
+            })
+        }        
+    }
+    render(){
+        // console.log(this.defaultbrushmove+","+this.props.id)
+       const {id} = this.props;
+        return (
+             <div id={id} className ="svg-container" style={{overflowX: 'auto', margin:'0 auto',overflow:'hidden'}}>
+                 
+            </div>
+        );
+    }
+}
+
+D3VerticalBarChartScroll.PropTypes = {
+    id: PropTypes.string.isRequired,
+    color: PropTypes.array.isRequired,
+    legend:PropTypes.array.isRequired
+}
+
+D3VerticalBarChartScroll.defaultProps = {
+}
+export default D3VerticalBarChartScroll
